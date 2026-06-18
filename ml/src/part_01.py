@@ -68,23 +68,3 @@ def build_dataset_features(dossier_racine):
     colonnes = ['Id_Image', 'pct_rouille', 'rugosite', 'ma_variable', 'label_malade']
     df = pd.DataFrame(donnees_globales, columns=colonnes)
     return df
-
-
-if __name__ == "__main__":
-    chemin_dataset = "../../dataset" 
-    
-    df_features = build_dataset_features(chemin_dataset)
-    
-    print("\n--- Extraction Terminée ---")
-    print(f"Nombre total d'images traitées : {len(df_features)}")
-    print("\nAperçu du DataFrame :")
-    print(df_features.head(10))  
-    print(df_features.tail(10))  
-    
-    df_features.to_csv("../../dataset/dataset_features.csv", index=False)
-    print("\nFichier 'dataset_features.csv' sauvegardé avec succès !")
-    
-
-
-
-
