@@ -219,3 +219,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 dataset/
+
+uploads/
+
+modeles_sauvegardes/
