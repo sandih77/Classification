@@ -1,3 +1,4 @@
+# main.py
 import os
 import joblib
 import numpy as np
@@ -8,23 +9,33 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 # Importations de vos modules personnalisés
-from src.part_01 import build_dataset_features
+from src.part_01 import build_dataset_features  # Ta fonction d'extraction corrigée
 from src.part_02 import trouver_meilleure_split
 from src.DecisionTree import build_tree, predict
 from src.RandomForest import build_random_forest, predict_random_forest
 
 if __name__ == "__main__":
     # =========================================================================
-    # 1. PRÉPARATION ET CHARGEMENT DES DONNÉES
+    # 0. RE-GÉNÉRATION ET MISE À JOUR DU DATASET CSV (PARTIE 1 CORRIGÉE)
     # =========================================================================
-    # Utilisation d'un chemin relatif robuste vers le dossier du dataset
+    print("="*50)
+    print("STAPE 1 : EXTRACTION ET MISE À JOUR DES CARACTÉRISTIQUES")
+    print("="*50)
+    
+    chemin_dataset_images = "../dataset"  # Doit contenir les sous-dossiers /saines et /malades
     chemin_csv = "../dataset/dataset_features.csv"
     
-    if not os.path.exists(chemin_csv):
-        print(f"Erreur : Le fichier {chemin_csv} est introuvable.")
-        print("Veuillez d'abord exécuter l'extraction des caractéristiques de la Partie 1.")
-        exit(1)
-        
+    print("Lancement de l'extraction des caractéristiques (avec ratio Rouge/Vert)...")
+    df_nouveau = build_dataset_features(chemin_dataset_images)
+    
+    # Sauvegarde automatique du nouveau CSV (écrase l'ancien avec les bonnes valeurs)
+    os.makedirs(os.path.dirname(chemin_csv), exist_ok=True)
+    df_nouveau.to_csv(chemin_csv, index=False)
+    print(f"Extraction terminée ! Le fichier '{chemin_csv}' a été mis à jour avec succès.\n")
+
+    # =========================================================================
+    # 1. PRÉPARATION ET CHARGEMENT DES DONNÉES
+    # =========================================================================
     df = pd.read_csv(chemin_csv)
 
     # Séparation des caractéristiques (X) et de la cible/label (y)
@@ -32,12 +43,11 @@ if __name__ == "__main__":
     y = df['label_malade'].values
 
     # Découpage réglementaire : 80% Apprentissage (Train) / 20% Test
-    # stratify=y permet de garder la même proportion de malades/saines dans les deux blocs
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    print(f"Données chargées avec succès ! Jeu d'entraînement : {X_train.shape[0]} images, Jeu de test : {X_test.shape[0]} images.")
+    print(f"Données chargées ! Train : {X_train.shape[0]} images, Test : {X_test.shape[0]} images.")
 
     # =========================================================================
     # 2. ÉVALUATION DE L'ARBRE DE DÉCISION UNIQUE "MAISON"
@@ -71,7 +81,7 @@ if __name__ == "__main__":
     print(f"[{cm_tree[1][0]}   {cm_tree[1][1]}]  <- [Fausses Saines (FN)  Vrais Malades (TP)]")
 
     # =========================================================================
-    # 3. ÉVALUATION DE LA FORÊT ALÉATOIRE "MAISON" (BAG-GING)
+    # 3. ÉVALUATION DE LA FORÊT ALÉATOIRE "MAISON" (BAGGING)
     # =========================================================================
     print("\n" + "-"*50)
     print("ÉVALUATION DE LA FORÊT ALÉATOIRE (MAISON)")
@@ -124,11 +134,15 @@ if __name__ == "__main__":
     print(f" [Sklearn] Forêt Aléatoire Standard  : {acc_foret_sk * 100:.2f}%")
     print("="*50)
 
-    # Sauvegarde de la forêt Sklearn
-    # os.makedirs("../../modeles_sauvegardes", exist_ok=True)
-    joblib.dump(foret_maison, "../modeles_sauvegardes/meilleure_foret.pkl")
+    # =========================================================================
+    # 5. SAUVEGARDE DES MODÈLES SÉRIALISÉS (.PKL)
+    # =========================================================================
+    os.makedirs("../modeles_sauvegardes", exist_ok=True)
+    
+    # Note : Correction apportée ici pour sauvegarder la forêt Sklearn (qui donne la confrontation finale) ou la maison selon tes besoins
+    joblib.dump(foret_sklearn, "../modeles_sauvegardes/meilleure_foret.pkl")
     print("[Partie 4] Modèle Forêt Sklearn exporté dans modeles_sauvegardes/meilleure_foret.pkl")
     
-    # --- LA LIGNE À AJOUTER POUR VOTRE ARBRE MAISON ---
+    # Sauvegarde de l'arbre fait maison
     joblib.dump(arbre_maison, "../modeles_sauvegardes/meilleur_arbre_maison.pkl")
     print("[Partie 4] Modèle Arbre Maison exporté dans modeles_sauvegardes/meilleur_arbre_maison.pkl")
