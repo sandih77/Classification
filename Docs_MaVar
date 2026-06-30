@@ -1,0 +1,58 @@
+# Documentation Technique : Indice de Rougeur Relatif ($\frac{\text{Rouge}}{\text{Vert}}$)
+
+Cette section présente la justification théorique, biologique et informatique du choix de notre troisième variable caractéristique (`ma_variable`), calculée comme le ratio de l'intensité moyenne du canal Rouge sur le canal Vert.
+
+---
+
+## 1. Justification Agronomique (Approche Biologique)
+
+En agronomie, la télédétection et le diagnostic précoce des maladies reposent sur l'analyse des propriétés spectrales de la végétation. La santé d'un couvert végétal est directement corrélée à l'activité de ses pigments photosynthétiques (principalement la chlorophylle).
+
+* **Comportement d'une feuille Saine :** Une feuille saine contient une forte concentration de chlorophylle. Ce pigment absorbe massivement la lumière dans le spectre du **Rouge** (pour produire de l'énergie via la photosynthèse) et réfléchit la lumière dans le spectre du **Vert**. Par conséquent, une image de feuille saine présente une intensité brute de vert très élevée et un niveau de rouge très bas.
+* **Comportement d'une feuille atteinte de Rouille Polysora :** Lorsque le champignon colonise les tissus, il détruit les cellules végétales et stoppe la photosynthèse. Les cellules vertes laissent place à des pustules de couleur ocre, orangée ou brune, chargées de spores. Ces structures fongiques inversent la signature de la feuille : elles absorbent moins le rouge (ce qui fait grimper l'intensité du canal Rouge) et le vert s'effondre.
+
+### Interprétation de l'Indice :
+En posant l'équation du ratio :
+
+$$\text{Ratio} = \frac{\text{Moyenne}_{\text{Rouge}}}{\text{Moyenne}_{\text{Vert}}}$$
+
+* **$\text{Ratio} \le 0.7$ :** Signature typique d'un tissu sain (Le vert domine largement).
+* **$0.7 < \text{Ratio} < 1.0$ :** Zone charnière d'infection modérée (Entrée en sénescence ou apparition des premières pustules, le rouge et le vert s'équilibrent).
+* **$\text{Ratio} \ge 1.0$ :** Infection sévère ou nécrose avancée (Le rouge dépasse mathématiquement le vert).
+
+---
+
+## 2. Justification Algorithmique (Approche Informatique)
+
+D'un point de vue purement informatique et traitement d'images, l'introduction de ce ratio résout deux problèmes majeurs rencontrés par les algorithmes de Machine Learning sur le terrain.
+
+### A. Invariance aux conditions d'illumination (Robustesse)
+Le principal défaut des descripteurs absolus (comme les masques de couleur HSV `cv2.inRange`) est leur hypersensibilité à la lumière ambiante. Une photo prise en plein soleil (surexposée) ou par temps nuageux (sous-exposée) fausse les seuils de détection de pixels.
+
+L'utilisation d'une division mathématique apporte une **normalisation** automatique :
+* Si la luminosité augmente, les valeurs des canaux Rouge et Vert augmentent *simultanément* et proportionnellement.
+* Lors de la division, ces variations d'échelle s'annulent. Le ratio reste stable et invariant, garantissant la robustesse du modèle face aux changements climatiques ou de caméra.
+
+### B. Optimisation du fractionnement de l'Arbre (Max-Minority Split)
+Un arbre de décision construit des frontières de décision orthogonales (il coupe l'espace en ligne droite sur une seule variable à la fois). 
+
+Si l'on fournit séparément le Vert et le Rouge, l'arbre devra créer plusieurs nœuds successifs pour isoler la combinaison des deux. En combinant ces deux forces antagonistes en **une seule variable mathématique**, on projette les données sur un axe hautement discriminant. 
+
+L'algorithme de calcul du meilleur split (`trouver_meilleure_split`) peut ainsi trouver une valeur seuil parfaite (souvent située autour de $0.78 - 0.85$) dès la racine de l'arbre, réduisant la profondeur nécessaire et limitant grandement les risques d'**overfitting** (surapprentissage).
+
+---
+
+## 3. Implémentation Algorithmique (`Python / OpenCV`)
+
+L'extraction de cette caractéristique est optimisée pour s'affranchir du bruit de fond et s'exécute de manière instantanée après le chargement de la matrice de l'image :
+
+```python
+# Séparation des canaux matriciels (OpenCV charge par défaut en BGR)
+_, canal_vert, canal_rouge = cv2.split(image)
+
+# Calcul des moments d'intensité moyenne du signal
+moyenne_rouge = np.mean(canal_rouge)
+moyenne_vert = np.mean(canal_vert)
+
+# Calcul du ratio avec une constante d'Epsilon (1e-5) anti-division par zéro
+ratio_rouge_vert = moyenne_rouge / (moyenne_vert + 1e-5)
