@@ -1,4 +1,5 @@
 import os
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -122,3 +123,12 @@ if __name__ == "__main__":
     print(f" [Maison]  Forêt Aléatoire (Bagging) : {acc_rf * 100:.2f}%")
     print(f" [Sklearn] Forêt Aléatoire Standard  : {acc_foret_sk * 100:.2f}%")
     print("="*50)
+
+    # Sauvegarde de la forêt Sklearn
+    # os.makedirs("../../modeles_sauvegardes", exist_ok=True)
+    joblib.dump(foret_maison, "../modeles_sauvegardes/meilleure_foret.pkl")
+    print("[Partie 4] Modèle Forêt Sklearn exporté dans modeles_sauvegardes/meilleure_foret.pkl")
+    
+    # --- LA LIGNE À AJOUTER POUR VOTRE ARBRE MAISON ---
+    joblib.dump(arbre_maison, "../modeles_sauvegardes/meilleur_arbre_maison.pkl")
+    print("[Partie 4] Modèle Arbre Maison exporté dans modeles_sauvegardes/meilleur_arbre_maison.pkl")
